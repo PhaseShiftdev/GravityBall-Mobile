@@ -3,7 +3,16 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Obstacles
+  - Depart
+  - Point
+  - Obstacle Master
+  - Obstacle Declencheur
+  - wallLeft
+  - wallRight
+  - wallObstacle
+  - ShadowLayer
   layers:
   - Default
   - TransparentFX
@@ -13,16 +22,16 @@ TagManager:
   - UI
   - 
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - ShadowLayer
+  - Player
+  - Explosion
+  - Wall
+  - Point
+  - ObjectDestroyer
+  - ShadowLayer
+  - Trail
+  - ShadowLayer
+  - ShadowLayer
   - 
   - 
   - 
@@ -38,6 +47,18 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: ShadowLayer
+    uniqueID: 2214621037
+    locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Trail
+    uniqueID: 384473047
+    locked: 0
+  - name: Game
+    uniqueID: 55980047
+    locked: 0
+  - name: UI
+    uniqueID: 735354873
     locked: 0
