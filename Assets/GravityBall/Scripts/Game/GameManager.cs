@@ -13,7 +13,8 @@ using System.Collections.Generic;
 /// </summary>
 public class GameManager : MonoBehaviorHelper 
 {
-	public int numberOfPlayToShowInterstitial = 5;
+
+    public int numberOfPlayToShowInterstitial = 5;
 
 	public GameObject popUpContinuePrefab;
 
@@ -93,13 +94,13 @@ public class GameManager : MonoBehaviorHelper
 	/// <summary>
 	/// The total life the player have
 	/// </summary>
-	private int life;
+	private int life = 3;
 	/// <summary>
 	/// To get the total life the player have. Default = 3
 	/// </summary>
 	public int GetLife()
 	{
-		return PlayerPrefs.GetInt("LIFE",3);
+		return PlayerPrefs.GetInt("LIFE",life);
 	}
 	/// <summary>
 	/// To set the total life the player have
@@ -150,7 +151,8 @@ public class GameManager : MonoBehaviorHelper
 
 	void Start()
 	{
-		Application.targetFrameRate = 60;
+        AdsManager.Instance.CreateBanner();
+        Application.targetFrameRate = 60;
 		GC.Collect ();
 	}
 
@@ -242,6 +244,8 @@ public class GameManager : MonoBehaviorHelper
 	{
 		if (OnGameEnded != null)
 			OnGameEnded ();
+
+        this.SetLife(3);
 		
 		ScoreManager.SaveScore (point);
 

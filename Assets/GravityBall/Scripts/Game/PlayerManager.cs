@@ -1,8 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
-#if APPADVISORY_ADS
-using AppAdvisory.Ads;
-#endif
+using GoogleMobileAds.Api;
 
 /// <summary>
 /// Class who managed the player
@@ -41,6 +39,7 @@ public class PlayerManager : MonoBehaviorHelper
 	/// reference to the player rigidbody2D
 	/// </summary>
 	private Rigidbody2D _rigidbody;
+    
 
 	void Awake()
 	{
@@ -87,7 +86,8 @@ public class PlayerManager : MonoBehaviorHelper
 
 	void Start()
 	{
-		isGameOver = false;
+        AdsManager.Instance.CreateBanner();
+        isGameOver = false;
 	}
 
 
@@ -171,32 +171,34 @@ public class PlayerManager : MonoBehaviorHelper
 			return;
 
 		isGameOver = true;
+        int totalLives = gameManager.GetLife() - 1;
+        gameManager.SetLife(totalLives);
 
-		StartCoroutine (CoroutLaunchGameOver ());
+		StartCoroutine (CoroutLaunchGameOver (totalLives));
 	}
 
 	public void AdGameOverLogic()
 	{
-		#if APPADVISORY_ADS
 		int count = PlayerPrefs.GetInt("GAMEOVER_COUNT",0);
 		count ++;
 
-		if(count > gameManager.numberOfPlayToShowInterstitial && AdsManager.instance.IsReadyInterstitial())
+		/*if(count > gameManager.numberOfPlayToShowInterstitial && AdsManager.instance.IsReadyInterstitial())
 		{
 			count = 0;	
-			AdsManager.instance.ShowInterstitial ();
-		}
+			AdsManager.instance.ShowInterstitial();
+		}*/
 
 		PlayerPrefs.SetInt("GAMEOVER_COUNT", count);
-		#endif
 	}
 
 	/// <summary>
 	/// Coroutine to turn rigidbody2d to kinematic = true (player can't move anymore), emit particles game over, and show popup continue if a rewarded video is available. And if game over potentially show interstitial (please have a look to AdsManager)
 	/// </summary>
-	IEnumerator CoroutLaunchGameOver()
+	IEnumerator CoroutLaunchGameOver(int totalLives)
 	{
-		_rigidbody.velocity = Vector2.zero;
+        AdsManager.Instance.DestroyBanner();
+
+        _rigidbody.velocity = Vector2.zero;
 
 		_rigidbody.isKinematic = true;
 
@@ -206,72 +208,61 @@ public class PlayerManager : MonoBehaviorHelper
 
 		StartCoroutine(CameraShake.Shake(Camera.main.transform,0.1f));
 
-		#if UNITY_TVOS
-		#else
-		#if APPADVISORY_ADS
+        yield return new WaitForSeconds(1.5f);
+
+        var go = Instantiate(gameManager.popUpContinuePrefab) as GameObject;
+        var popUp = go.GetComponent<PopupContinue>();
+
+        if (totalLives < 1)
+        {
+            AdGameOverLogic();
+
+            gameManager.GameOver();
+        }
+
+        popUp.OpenPopupContinue((bool success) => {
+            if (success)
+            {
+                AdsManager.Instance.ShowRewardedVideo();
+                if (!AdsManager.Instance.rewardSuccess)
+                {
+                    AdGameOverLogic();
+
+                    gameManager.GameOver();
+                }
+
+                AdsManager.Instance.rewardSuccess = false;
+
+                AdsManager.Instance.RequestRewardBasedVideo();
+
+                gameManager.DespawnAll();
+
+                _rigidbody.velocity = Vector2.zero;
+
+                _rigidbody.isKinematic = false;
+
+                isGameOver = false;
+
+                canJump = true;
+
+                GetComponent<Collider2D>().enabled = true;
+
+                int direction = (transform.position.x >= 0) ? 1 : -1;
 
 
-		if (AdsManager.instance.IsReadyRewardedVideo ()) 
-		{
-			yield return new WaitForSeconds (1.5f);
+                _rigidbody.velocity = new Vector2(direction * ConstantForceX, ConstantForceY);
 
-			var go = Instantiate(gameManager.popUpContinuePrefab) as GameObject;
-			var popUp = go.GetComponent<PopupContinue>();
+                StartCoroutine(CoUpdate());
 
-			popUp.OpenPopupContinue ((bool success) => {
-				if (success) 
-				{
-					gameManager.DespawnAll();
+            }
+            else
+            {
+                AdGameOverLogic();
 
-					_rigidbody.velocity = Vector2.zero;
-
-					_rigidbody.isKinematic = false;
-
-					isGameOver = false;
-
-					canJump = true;
-
-					GetComponent<Collider2D> ().enabled = true;
-
-					int direction = (transform.position.x >= 0) ? 1 : -1;
-
-
-					_rigidbody.velocity = new Vector2 (direction*ConstantForceX, ConstantForceY);
-
-					StartCoroutine(CoUpdate());
-
-				} 
-				else 
-				{
-					AdGameOverLogic();
-
-					gameManager.GameOver ();
-				}
-			});
-		} 
-		else 
-		{
-		#endif
-		#endif
-		#if UNITY_TVOS
-		#else
-			yield return new WaitForSeconds (2);
-
-			#if APPADVISORY_ADS
-			AdGameOverLogic();
-			#endif
-
-		#endif
-			yield return new WaitForSeconds (1);
-
-			gameManager.GameOver ();
-		#if UNITY_TVOS
-		#else
-		#if APPADVISORY_ADS
-		}
-		#endif
-		#endif
-	}
+                gameManager.GameOver();
+            }
+        });
+    }
 
 	/// <summary>
 	/// Like the classic Update() function. I use coroutine to avoir useless Update if the game is not started or if is game over
